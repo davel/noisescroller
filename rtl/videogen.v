@@ -150,15 +150,18 @@ begin
                 end
             endcase
         end else begin
-            // V_gen <= lfsr_pixel[0] ? 8'hff : 8'h00;
-            V_gen <= {h_cnt[0],h_cnt[1],h_cnt[2],h_cnt[3],h_cnt[4],h_cnt[5],h_cnt[6],h_cnt[7]};
+            if ((h_cnt < X_START+H_OVERSCAN) || (h_cnt >= X_START+H_OVERSCAN+H_AREA) || (v_cnt < Y_START+V_OVERSCAN) || (v_cnt >= Y_START+V_OVERSCAN+V_AREA))
+                V_gen <= (h_cnt[0] ^ v_cnt[0]) ? 8'hff : 8'h00;
+            else if ((h_cnt < X_START+H_OVERSCAN+H_BORDER) || (h_cnt >= X_START+H_OVERSCAN+H_AREA-H_BORDER) || (v_cnt < Y_START+V_OVERSCAN+V_BORDER) || (v_cnt >= Y_START+V_OVERSCAN+V_AREA-V_BORDER))
+                V_gen <= 8'h50;
+            else
+                V_gen <= lfsr_pixel[0] ? 8'hff : 8'h00;
 
-
-            lfsr_pixel <= {
-				lfsr_pixel[6],lfsr_pixel[5],
-                lfsr_pixel[4],lfsr_pixel[3],
-                lfsr_pixel[2],lfsr_pixel[1],
-                lfsr_pixel[0], pixel_feedback};	
+                lfsr_pixel <= {
+                    lfsr_pixel[6],lfsr_pixel[5],
+                    lfsr_pixel[4],lfsr_pixel[3],
+                    lfsr_pixel[2],lfsr_pixel[1],
+                    lfsr_pixel[0], pixel_feedback};
         end
 
         ENABLE_out <= (h_cnt >= X_START && h_cnt < X_START + H_ACTIVE && v_cnt >= Y_START && v_cnt < Y_START + V_ACTIVE);
