@@ -69,11 +69,12 @@ reg [9:0] ypos;
 
 assign PCLK_out = clk27;
 //R, G and B should be 0 outside of active area
-assign R_out = ENABLE_out ? V_gen : 8'h00;
+assign R_out = ENABLE_out ? (V_gen+tri_gen) : 8'h00;
 assign G_out = ENABLE_out ? V_gen : 8'h00;
 assign B_out = ENABLE_out ? V_gen : 8'h00;
 
 reg [7:0] V_gen;
+reg [7:0] tri_gen;
 
 //reg [7:0] lfsr_frame;
 reg [15:0] lfsr_pixel;
@@ -132,32 +133,41 @@ always @(posedge clk27 or negedge reset_n)
 begin
     if (!reset_n) begin
         V_gen <= 8'h00;
+        tri_gen <= 0;
         ENABLE_out <= 1'b0;
+        lfsr_pixel <= 'h01;
     end else begin
         if (lt_active) begin
             case (lt_mode)
                 default: begin
                     V_gen <= 8'h00;
+                    tri_gen <= 0;
                 end
                 `LT_POS_TOPLEFT: begin
                     V_gen <= ((h_cnt < (X_START+(H_ACTIVE/`LT_WIDTH_DIV))) && (v_cnt < (Y_START+(V_ACTIVE/`LT_HEIGHT_DIV)))) ? 8'hff : 8'h00;
+                    tri_gen <= 0;
                 end
                 `LT_POS_CENTER: begin
                     V_gen <= ((h_cnt >= (X_START+(H_ACTIVE/2)-(H_ACTIVE/(`LT_WIDTH_DIV*2)))) && (h_cnt < (X_START+(H_ACTIVE/2)+(H_ACTIVE/(`LT_WIDTH_DIV*2)))) && (v_cnt >= (Y_START+(V_ACTIVE/2)-(V_ACTIVE/(`LT_HEIGHT_DIV*2)))) && (v_cnt < (Y_START+(V_ACTIVE/2)+(V_ACTIVE/(`LT_HEIGHT_DIV*2))))) ? 8'hff : 8'h00;
+                    tri_gen <= 0;
                 end
                 `LT_POS_BOTTOMRIGHT: begin
                     V_gen <= ((h_cnt >= (X_START+H_ACTIVE-(H_ACTIVE/`LT_WIDTH_DIV))) && (v_cnt >= (Y_START+V_ACTIVE-(V_ACTIVE/`LT_HEIGHT_DIV)))) ? 8'hff : 8'h00;
+                    tri_gen <= 0;
                 end
             endcase
         end else begin
-            if ((h_cnt < X_START+H_OVERSCAN) || (h_cnt >= X_START+H_OVERSCAN+H_AREA) || (v_cnt < Y_START+V_OVERSCAN) || (v_cnt >= Y_START+V_OVERSCAN+V_AREA))
+            if ((h_cnt < X_START+H_OVERSCAN) || (h_cnt >= X_START+H_OVERSCAN+H_AREA) || (v_cnt < Y_START+V_OVERSCAN) || (v_cnt >= Y_START+V_OVERSCAN+V_AREA)) begin
                 V_gen <= (h_cnt[0] ^ v_cnt[0]) ? 8'hff : 8'h00;
-            else if ((h_cnt < X_START+H_OVERSCAN+H_BORDER) || (h_cnt >= X_START+H_OVERSCAN+H_AREA-H_BORDER) || (v_cnt < Y_START+V_OVERSCAN+V_BORDER) || (v_cnt >= Y_START+V_OVERSCAN+V_AREA-V_BORDER))
+                tri_gen <= 0;
+            end else if ((h_cnt < X_START+H_OVERSCAN+H_BORDER) || (h_cnt >= X_START+H_OVERSCAN+H_AREA-H_BORDER) || (v_cnt < Y_START+V_OVERSCAN+V_BORDER) || (v_cnt >= Y_START+V_OVERSCAN+V_AREA-V_BORDER)) begin
                 V_gen <= 8'h50;
-            else
-                V_gen <= ((lfsr_pixel[7] && lfsr_pixel[6] && lfsr_pixel[5]) ? 8'h00:8'hdf) + ((h_cnt & v_cnt)==0 ? 8'h20:'h00);
-
-                lfsr_pixel <= {pixel_feedback, lfsr_pixel[14:0]};
+                tri_gen <= 0;
+            end else begin
+                tri_gen <= ((h_cnt & v_cnt)==0 ? 8'h30:'h00);
+                V_gen <= ((lfsr_pixel[15] && lfsr_pixel[14] && lfsr_pixel[13]) ? 8'hcf:8'h00);
+                lfsr_pixel <= {lfsr_pixel[14:0], pixel_feedback};
+            end
         end
 
         ENABLE_out <= (h_cnt >= X_START && h_cnt < X_START + H_ACTIVE && v_cnt >= Y_START && v_cnt < Y_START + V_ACTIVE);
