@@ -165,7 +165,7 @@ begin
                 tri_gen <= 0;
             end else begin
                 tri_gen <= ((h_cnt & v_cnt)==0 ? 8'h30:'h00);
-                V_gen <= ((lfsr_pixel[15] && lfsr_pixel[14] && lfsr_pixel[13]) ? 8'hcf:8'h00);
+                V_gen <= ((lfsr_pixel[15] && lfsr_pixel[14] && lfsr_pixel[13] && lfsr_pixel[12]) ? 8'hcf:8'h00);
                 lfsr_pixel <= {lfsr_pixel[14:0], pixel_feedback};
             end
         end
