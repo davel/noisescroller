@@ -75,10 +75,10 @@ assign B_out = ENABLE_out ? V_gen : 8'h00;
 
 reg [7:0] V_gen;
 
-reg [7:0] lfsr_frame;
-reg [7:0] lfsr_pixel;
-assign frame_feedback =  ! (lfsr_frame[7] ^ lfsr_frame[3]);
-assign pixel_feedback =  ! (lfsr_pixel[7] ^ lfsr_pixel[3]);
+//reg [7:0] lfsr_frame;
+//reg [7:0] lfsr_pixel;
+//assign frame_feedback =  ! (lfsr_frame[7] ^ lfsr_frame[3]);
+//assign pixel_feedback =  ! (lfsr_pixel[7] ^ lfsr_pixel[3]);
 
 
 //HSYNC gen (negative polarity)
@@ -112,11 +112,11 @@ begin
                 v_cnt <= v_cnt + 1'b1;
             else
 
-			lfsr_frame <= {
-				lfsr_frame[6],lfsr_frame[5],
-				lfsr_frame[4],lfsr_frame[3],
-				lfsr_frame[2],lfsr_frame[1],
-				lfsr_frame[0], frame_feedback};	
+//			lfsr_frame <= {
+//				lfsr_frame[6],lfsr_frame[5],
+//				lfsr_frame[4],lfsr_frame[3],
+//				lfsr_frame[2],lfsr_frame[1],
+//				lfsr_frame[0], frame_feedback};	
 
                 v_cnt <= 0;
         end
@@ -155,13 +155,13 @@ begin
             else if ((h_cnt < X_START+H_OVERSCAN+H_BORDER) || (h_cnt >= X_START+H_OVERSCAN+H_AREA-H_BORDER) || (v_cnt < Y_START+V_OVERSCAN+V_BORDER) || (v_cnt >= Y_START+V_OVERSCAN+V_AREA-V_BORDER))
                 V_gen <= 8'h50;
             else
-                V_gen <= lfsr_pixel[0] ? 8'hff : 8'h00;
+                V_gen <= h_cnt[4] ? 8'hff:8'h00;
 
-                lfsr_pixel <= {
-                    lfsr_pixel[6],lfsr_pixel[5],
-                    lfsr_pixel[4],lfsr_pixel[3],
-                    lfsr_pixel[2],lfsr_pixel[1],
-                    lfsr_pixel[0], pixel_feedback};
+//                lfsr_pixel <= {
+//                    lfsr_pixel[6],lfsr_pixel[5],
+//                    lfsr_pixel[4],lfsr_pixel[3],
+//                    lfsr_pixel[2],lfsr_pixel[1],
+//                    lfsr_pixel[0], pixel_feedback};
         end
 
         ENABLE_out <= (h_cnt >= X_START && h_cnt < X_START + H_ACTIVE && v_cnt >= Y_START && v_cnt < Y_START + V_ACTIVE);
