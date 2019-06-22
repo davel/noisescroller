@@ -157,12 +157,12 @@ begin
                 end
             endcase
         end else begin
-            if ((h_cnt < X_START+H_OVERSCAN+H_BORDER) || (h_cnt >= X_START+H_OVERSCAN+H_AREA-H_BORDER) || (v_cnt < Y_START+V_OVERSCAN+V_BORDER) || (v_cnt >= Y_START+V_OVERSCAN+V_AREA-V_BORDER)) begin
+            if (!((h_cnt < X_START+H_OVERSCAN) || (h_cnt >= X_START+H_OVERSCAN+H_AREA) || (v_cnt < Y_START+V_OVERSCAN) || (v_cnt >= Y_START+V_OVERSCAN+V_AREA)) && (((h_cnt < X_START+H_OVERSCAN+H_BORDER) || (h_cnt >= X_START+H_OVERSCAN+H_AREA-H_BORDER) || (v_cnt < Y_START+V_OVERSCAN+V_BORDER) || (v_cnt >= Y_START+V_OVERSCAN+V_AREA-V_BORDER)))) begin
                 V_gen <= 8'h50;
                 tri_gen <= 0;
             end else begin
                 tri_gen <= ((h_cnt & v_cnt)==0 ? 8'hd0:'h00);
-                V_gen <= ((lfsr_pixel[15] && lfsr_pixel[14] && lfsr_pixel[13] && lfsr_pixel[12] && lfsr_pixel[11] && lfsr_pixel[1]) ? 8'hff:8'h00);
+                V_gen <= ((lfsr_pixel[15] && lfsr_pixel[14] && lfsr_pixel[13] && lfsr_pixel[12] && lfsr_pixel[11] && lfsr_pixel[2] && lfsr_pixel[1]) ? 8'hff:8'h00);
                 lfsr_pixel <= {lfsr_pixel[14:0], pixel_feedback};
             end
         end
