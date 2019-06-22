@@ -1,3 +1,4 @@
+// vim:ts=4:shiftwidth=4:expandtab
 //
 // Copyright (C) 2015-2017  Markus Hiienkari <mhiienka@niksula.hut.fi>
 //
@@ -67,13 +68,17 @@ reg [9:0] xpos;
 reg [9:0] ypos;
 
 assign PCLK_out = clk27;
-
 //R, G and B should be 0 outside of active area
 assign R_out = ENABLE_out ? V_gen : 8'h00;
 assign G_out = ENABLE_out ? V_gen : 8'h00;
 assign B_out = ENABLE_out ? V_gen : 8'h00;
 
 reg [7:0] V_gen;
+
+reg [7:0] lfsr_frame;
+reg [7:0] lfsr_pixel;
+assign frame_feedback =  ! (lfsr_frame[7] ^ lfsr_frame[3]);
+assign pixel_feedback =  ! (lfsr_pixel[7] ^ lfsr_pixel[3]);
 
 
 //HSYNC gen (negative polarity)
@@ -106,8 +111,16 @@ begin
             if (v_cnt < V_TOTAL-1)
                 v_cnt <= v_cnt + 1'b1;
             else
+
+			lfsr_frame <= {
+				lfsr_frame[6],lfsr_frame[5],
+				lfsr_frame[4],lfsr_frame[3],
+				lfsr_frame[2],lfsr_frame[1],
+				lfsr_frame[0], frame_feedback};	
+
                 v_cnt <= 0;
         end
+
 
         //Vsync signal
         VSYNC_out <= (v_cnt < V_SYNCLEN) ? 1'b0 : 1'b1;
@@ -137,14 +150,15 @@ begin
                 end
             endcase
         end else begin
-            if ((h_cnt < X_START+H_OVERSCAN) || (h_cnt >= X_START+H_OVERSCAN+H_AREA) || (v_cnt < Y_START+V_OVERSCAN) || (v_cnt >= Y_START+V_OVERSCAN+V_AREA))
-                V_gen <= (h_cnt[0] ^ v_cnt[0]) ? 8'hff : 8'h00;
-            else if ((h_cnt < X_START+H_OVERSCAN+H_BORDER) || (h_cnt >= X_START+H_OVERSCAN+H_AREA-H_BORDER) || (v_cnt < Y_START+V_OVERSCAN+V_BORDER) || (v_cnt >= Y_START+V_OVERSCAN+V_AREA-V_BORDER))
-                V_gen <= 8'h50;
-            else if (v_cnt >= Y_START+V_OVERSCAN+V_BORDER+V_GRADIENT-V_GRAYRAMP)
-                V_gen <= (((h_cnt - (X_START+H_OVERSCAN+H_BORDER)) >> 4) << 3) + (h_cnt - (X_START+H_OVERSCAN+H_BORDER) >> 6);
-            else
-                V_gen <= (h_cnt - (X_START+H_OVERSCAN+H_BORDER)) >> 1;
+            // V_gen <= lfsr_pixel[0] ? 8'hff : 8'h00;
+            V_gen <= {h_cnt[0],h_cnt[1],h_cnt[2],h_cnt[3],h_cnt[4],h_cnt[5],h_cnt[6],h_cnt[7]};
+
+
+            lfsr_pixel <= {
+				lfsr_pixel[6],lfsr_pixel[5],
+                lfsr_pixel[4],lfsr_pixel[3],
+                lfsr_pixel[2],lfsr_pixel[1],
+                lfsr_pixel[0], pixel_feedback};	
         end
 
         ENABLE_out <= (h_cnt >= X_START && h_cnt < X_START + H_ACTIVE && v_cnt >= Y_START && v_cnt < Y_START + V_ACTIVE);
