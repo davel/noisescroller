@@ -76,10 +76,10 @@ assign B_out = ENABLE_out ? V_gen : 8'h00;
 reg [7:0] V_gen;
 reg [7:0] tri_gen;
 
-//reg [7:0] lfsr_frame;
 reg [15:0] lfsr_pixel;
-//assign frame_feedback =  ! (lfsr_frame[7] ^ lfsr_frame[3]);
+reg [15:0] lfsr_frame;
 assign pixel_feedback =  ((lfsr_pixel[15] ^ lfsr_pixel[14]) ^ lfsr_pixel[12]) ^ lfsr_pixel[3];
+assign frame_feedback =  ((lfsr_frame[15] ^ lfsr_frame[14]) ^ lfsr_frame[12]) ^ lfsr_frame[3];
 
 
 //HSYNC gen (negative polarity)
@@ -106,20 +106,16 @@ begin
     if (!reset_n) begin
         v_cnt <= 0;
         VSYNC_out <= 0;
+        lfsr_frame <= 'h01;
     end else begin
         //Vsync counter
         if (h_cnt == H_TOTAL-1) begin
             if (v_cnt < V_TOTAL-1)
                 v_cnt <= v_cnt + 1'b1;
-            else
-
-//			lfsr_frame <= {
-//				lfsr_frame[6],lfsr_frame[5],
-//				lfsr_frame[4],lfsr_frame[3],
-//				lfsr_frame[2],lfsr_frame[1],
-//				lfsr_frame[0], frame_feedback};	
-
+            else begin
+                lfsr_frame <= {lfsr_frame[14:0], frame_feedback};
                 v_cnt <= 0;
+            end
         end
 
 
@@ -135,7 +131,6 @@ begin
         V_gen <= 8'h00;
         tri_gen <= 0;
         ENABLE_out <= 1'b0;
-        lfsr_pixel <= 'h01;
     end else begin
         if (lt_active) begin
             case (lt_mode)
@@ -160,6 +155,7 @@ begin
             if (((h_cnt < X_START+H_OVERSCAN) || (h_cnt >= X_START+H_OVERSCAN+H_AREA) || (v_cnt < Y_START+V_OVERSCAN) || (v_cnt >= Y_START+V_OVERSCAN+V_AREA)) && (((h_cnt < X_START+H_OVERSCAN+H_BORDER) || (h_cnt >= X_START+H_OVERSCAN+H_AREA-H_BORDER) || (v_cnt < Y_START+V_OVERSCAN+V_BORDER) || (v_cnt >= Y_START+V_OVERSCAN+V_AREA-V_BORDER)))) begin
                 V_gen <= 8'h50;
                 tri_gen <= 0;
+                lfsr_pixel <= lfsr_frame;
             end else begin
                 tri_gen <= ((h_cnt & v_cnt)==0 ? 8'hd0:'h00);
                 V_gen <= ((lfsr_pixel[15] && lfsr_pixel[14] && lfsr_pixel[13] && lfsr_pixel[12] && lfsr_pixel[11] && lfsr_pixel[2] && lfsr_pixel[1]) ? 8'hff:8'h00);
